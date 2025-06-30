@@ -12,6 +12,7 @@ let apiData, apiProm;
 let stateID = 0;
 let turnStateID;
 let gameEnded=false;
+let escaped=[];
 const numStates = nodes.length+1; // Nodes + terminal state
 
 const topBarProper= document.getElementById("top_bar_proper");
@@ -245,6 +246,19 @@ async function makeBestMove() {
   if(apiData.cost==1000000){
     gameEnded = true;
     stopAIPlay();
+
+    let remainder = apiData.move % numStates**counts[EVADER]; 
+    for (let i=counts[EVADER]; i<agentList.length; i++) {
+      const a=agentList[i];
+      const newNodeID = Math.floor(remainder / a.factor);
+      remainder -= newNodeID * a.factor;
+      if (newNodeID == nodes.length) {
+        escaped.push(a.marker);
+        a.marker.getElement()?.classList.add("display_none");
+      }
+    }
+    
+    return;
   }
 
   let remainder = apiData.move;
@@ -275,6 +289,11 @@ function moveAgent(agent, oldNode, newNode) {
 }
 
 function undo() {
+  for(let v of escaped){
+    v.getElement()?.classList.remove("display_none");
+  }
+  escaped=[];
+
   if (history.length == 0) {
     return false;
   }
@@ -381,10 +400,10 @@ function updateCostAndBestMove() {
     }
 
     apiData = await res.json();
-    if (apiData.cost == 1000000) {
-      gameEnded = true;
-      stopAIPlay();
-    }
+    // if (apiData.cost == 1000000) {
+    //   gameEnded = true;
+    //   stopAIPlay();
+    // }
 
     if (!apiData || apiData.cost == null) {
       costElem.innerText = "Cost: —";
