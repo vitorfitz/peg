@@ -92,7 +92,7 @@ function undo() {
 }
 
 function move() {
-  if (pathPos == 2*path.length-1) {
+  if (pathPos == 2*path.length-2) {
     stopAutoPlay();
     return;
   }
