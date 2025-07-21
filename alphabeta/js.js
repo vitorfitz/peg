@@ -63,10 +63,10 @@ for (let i = 0; i < path[0][1].length; i++) {
 
 function setPosition(n){
   pathPos=n;
-  turn=Math.floor(n/2);
+  let turns=[Math.ceil(n/2),Math.floor(n/2)]
   for(let i=0; i<2; i++){
-    for (j=0; j<path[turn][i].length; j++) {
-      const ind = path[turn][i][j];
+    for (j=0; j<path[turns[i]][i].length; j++) {
+      const ind = path[turns[i]][i][j];
       if(ind==nodes.length){
         agents[i][j].getElement()?.classList.add("display_none");
       }
