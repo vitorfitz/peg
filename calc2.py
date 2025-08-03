@@ -74,22 +74,25 @@ def retrograde(graph, n_pursuers, escape_nodes):
 
     q = deque()
     idx = 0
+    pre_processed=0
     for evader in tqdm(range(n_nodes),desc="Generating terminal states"):
         for pursuers in combinations_with_replacement(range(n_nodes), n_pursuers):
             if evader in pursuers:
                 results[0][idx] = 1
                 results[1][idx] = 1
                 q.append(((evader, pursuers), 0, idx))
-            elif evader in escape_nodes:
-                results[0][idx] = -1
-                results[1][idx] = -1
-                q.append(((evader, pursuers), 0, idx))
+                pre_processed+=2
             else:
                 degree[1][idx] = len({tuple(sorted(p_moves)) for p_moves in product(*(adj[p] for p in pursuers))})
-                degree[0][idx] = len([a for a in adj[evader] if a not in pursuers])
+                if evader in escape_nodes:
+                    results[0][idx] = -1
+                    q.append(((evader, pursuers), 0, idx))
+                    pre_processed+=1
+                else:
+                    degree[0][idx] = len([a for a in adj[evader] if a not in pursuers])
             idx += 1
 
-    states_to_process=2*(total_positions-len(q))
+    states_to_process=2*total_positions-pre_processed
     pbar = tqdm(total=states_to_process, desc="Retrograde propagation",smoothing=0)
     while q:
         pos, turn, idx = q.popleft()
