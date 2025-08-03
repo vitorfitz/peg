@@ -297,7 +297,7 @@ vector<int> RetrogradeSolver::unrankCombo(int rank)
     rank = total_combos - rank - 1;
     int lex_rank = total_combos - rank - 1;
     vector<int> combo(n_pursuers);
-    int x = 0;
+    int x = 0, el=0;
     for (int i = 0; i < n_pursuers; ++i) {
         while (true) {
             int c = comb(n_nodes - x + n_pursuers - i - 2, n_pursuers - i - 1);
@@ -305,7 +305,8 @@ vector<int> RetrogradeSolver::unrankCombo(int rank)
                 lex_rank -= c;
                 x++;
             } else {
-                combo.push_back(x);
+                combo[el]=x;
+                el++;
                 break;
             }
         }
