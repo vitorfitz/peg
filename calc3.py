@@ -26,159 +26,12 @@ import re
 from math import comb
 from itertools import product,combinations_with_replacement
 from geo import *
+from retrograde_cpp import RetrogradeSolver
 
 def retrograde(graph, n_pursuers, escape_nodes):
-    n_nodes = len(graph)
-    adj = [neighbors + [i] for i, neighbors in enumerate(graph)]
-    escape_nodes = set(escape_nodes)
-    total_combos = comb(n_nodes + n_pursuers - 1, n_pursuers)
-    total_positions = total_combos * n_nodes
-    print(total_positions,"positions")
-
-    def rank_combo(combo):
-        k = len(combo)
-        rank = 0
-        for i, val in enumerate(combo):
-            rank += comb(n_nodes - val + k - i - 2, k - i)
-        return total_combos - rank - 1
-
-    def pos_to_index(pos):
-        evader, pursuers = pos
-        return evader * total_combos + rank_combo(pursuers)
-    
-    def unrank_combo(rank):
-        rank = total_combos - rank - 1
-        lex_rank = total_combos - rank - 1
-        combo = []
-        x = 0
-        for i in range(n_pursuers):
-            while True:
-                c = comb(n_nodes - x + n_pursuers - i - 2, n_pursuers - i - 1)
-                if c <= lex_rank:
-                    lex_rank -= c
-                    x += 1
-                else:
-                    combo.append(x)
-                    break
-        return tuple(combo)
-    
-    def index_to_pos(idx):
-        evader = idx // total_combos
-        rank = idx % total_combos
-        pursuers = unrank_combo(rank)
-        return (evader, pursuers)
-
-    results = np.zeros((2, total_positions), dtype=np.int16)
-    degree = np.zeros((2, total_positions), dtype=np.int16)
-    best_moves = np.full((2, total_positions), -1, dtype=np.int32)
-
-    q = deque()
-    idx = 0
-    pre_processed=0
-    for evader in tqdm(range(n_nodes),desc="Generating terminal states"):
-        for pursuers in combinations_with_replacement(range(n_nodes), n_pursuers):
-            if evader in pursuers:
-                results[0][idx] = 1
-                results[1][idx] = 1
-                q.append(((evader, pursuers), 0, idx))
-                pre_processed+=2
-            else:
-                degree[1][idx] = len({tuple(sorted(p_moves)) for p_moves in product(*(adj[p] for p in pursuers))})
-                if evader in escape_nodes:
-                    results[0][idx] = -1
-                    q.append(((evader, pursuers), 0, idx))
-                    pre_processed+=1
-                else:
-                    degree[0][idx] = len([a for a in adj[evader] if a not in pursuers])
-            idx += 1
-
-    states_to_process=2*total_positions-pre_processed
-    pbar = tqdm(total=states_to_process, desc="Retrograde propagation",smoothing=0)
-    while q:
-        pos, turn, idx = q.popleft()
-        val = results[turn][idx]
-        evader, pursuers = pos
-
-        if turn == 0:
-            # Evader just moved: pursuer's turn
-            for p_moves in product(*[adj[p] for p in pursuers]):
-                p_sorted = tuple(sorted(p_moves))
-                prev_pos = (evader, p_sorted)
-                prev_idx = pos_to_index(prev_pos)
-                if results[1][prev_idx] == 0:
-                    if val > 0:
-                        # Pursuers can force capture
-                        results[1][prev_idx] = val + 1
-                        best_moves[1][prev_idx] = idx
-                        pbar.update(1)
-                        q.append((prev_pos, 1, prev_idx))
-                    elif val < 0:
-                        # This move leads to escape, pursuers want to avoid it
-                        degree[1][prev_idx] -= 1
-                        if degree[1][prev_idx] == 0:
-                            # All moves lead to escape
-                            results[1][prev_idx] = val - 1  # worst case escape
-                            best_moves[1][prev_idx] = idx
-                            pbar.update(1)
-                            q.append((prev_pos, 1, prev_idx))
-        else:
-            # Pursuers just moved: evader's turn
-            for e_prev in adj[evader]:
-                if e_prev in pursuers:
-                    continue
-                prev_pos = (e_prev, pursuers)
-                prev_idx = pos_to_index(prev_pos)
-                if results[0][prev_idx] == 0:
-                    if val < 0:
-                        # Evader can force escape
-                        results[0][prev_idx] = val - 1
-                        best_moves[0][prev_idx] = idx
-                        pbar.update(1)
-                        q.append((prev_pos, 0, prev_idx))
-                    elif val > 0:
-                        # This move leads to capture, evader wants to avoid it
-                        degree[0][prev_idx] -= 1
-                        if degree[0][prev_idx] == 0:
-                            results[0][prev_idx] = val + 1  # worst case capture
-                            best_moves[0][prev_idx] = idx
-                            pbar.update(1)
-                            q.append((prev_pos, 0, prev_idx))
-
-    n_stalemate=states_to_process-pbar.n
-    
-    # random non-losing moves for stalemate states
-    for turn in [0, 1]:
-        for idx in range(total_positions):
-            if results[turn][idx] != 0 or best_moves[turn][idx] != -1:
-                continue
-
-            pos = index_to_pos(idx)
-            evader, pursuers = pos
-
-            if turn == 0:
-                # Evader's turn
-                for e in adj[evader]:
-                    if e in pursuers:
-                        continue
-                    next_idx = pos_to_index((e, pursuers))
-                    if results[1][next_idx] <= 0:  # evader doesn't immediately lose
-                        best_moves[0][idx] = next_idx
-                        pbar.update(1)
-                        break
-
-            else:
-                # Pursuers' turn
-                for p_moves in product(*[adj[p] for p in pursuers]):
-                    p_sorted = tuple(sorted(p_moves))
-                    next_idx = pos_to_index((evader, p_sorted))
-                    if results[0][next_idx] >= 0:  # pursuers don't immediately lose
-                        best_moves[1][idx] = next_idx
-                        pbar.update(1)
-                        break
-
-    pbar.close()
-    tqdm.write(str(n_stalemate)+" stalemate states")
-    return results, best_moves, pos_to_index, index_to_pos
+    solver = RetrogradeSolver(graph, n_pursuers, escape_nodes)
+    solver.run()
+    return [solver.get_results(i) for i in [0,1]],[solver.get_best_moves(i) for i in [0,1]]
 
 def visualize_map(nodes, graph, escape_positions, center, avg_coords, cos_lat, n_pursuers, tag):
     zoom_level = 16
@@ -309,7 +162,7 @@ def main(args):
             raise ValueError("Tag must be a valid identifier.")
         tag=args.tag
 
-    results,best_moves,_,_ = retrograde(graph, args.pursuers, escape_positions)
+    results,best_moves = retrograde(graph, args.pursuers, escape_positions)
     store_best_moves(results,best_moves, args.output_dir, tag)
     visualize_map(nodes, graph, escape_positions, args.center, avg_coords, cos_lat, args.pursuers, tag)
 
