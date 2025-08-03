@@ -12,6 +12,7 @@
 #include <functional>
 #include <cassert>
 #include <chrono>
+#include <iomanip>
 
 namespace py = pybind11;
 using namespace std;
