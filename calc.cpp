@@ -271,10 +271,10 @@ void RetrogradeSolver::run()
     total_s %= 60;
     auto seconds = total_s;
 
-    std::cout << "Elapsed: " << std::setfill('0')
+    cout << "Elapsed: " << setfill('0')
               << hours << ":"
-              << std::setw(2) << minutes << ":"
-              << std::setw(2) << seconds << endl;
+              << setw(2) << minutes << ":"
+              << setw(2) << seconds << endl;
 }
 
 int RetrogradeSolver::rankCombo(const vector<int> &combo)
