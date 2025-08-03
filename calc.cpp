@@ -248,7 +248,7 @@ void RetrogradeSolver::run()
                         if (results[0][next_idx] >= 0) {
                             best_moves[1][idx] = next_idx;
                         }
-                        return;
+                        goto end;
                     }
                     for (int p : adj[pursuers[depth]]) {
                         current[depth] = p;
@@ -261,6 +261,7 @@ void RetrogradeSolver::run()
         }
     }
 
+    end:
     auto t_end = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::seconds>(t_end - t_start);
 
