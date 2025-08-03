@@ -181,9 +181,6 @@ def circular_clusters(nodes, radius, rebuild_threshold=0.3, max_iters=727):
         cluster=np.array([idx])
         prev_cluster = cluster
 
-        if idx==420:
-            print("asd")
-
         for _ in range(max_iters):
             # Get candidate indices within radius
             candidate_indices = np.array(tree.query_ball_point(center, radius))
@@ -384,10 +381,5 @@ def make_map(relation_id,center,radius,granularity):
         c.set_coords(avg_coords,cos_lat)
 
     cluster_pruned={cluster_map[mapping[p]] for p in pruned if p in mapping and mapping[p] in cluster_map}
-
-    # Add terminal state
-    for node in cluster_pruned:
-        cluster_graph[node].append(len(cluster_graph))
-    cluster_graph.append([])
 
     return clusters,cluster_graph,cluster_pruned,avg_coords,cos_lat

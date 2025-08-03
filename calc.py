@@ -1701,6 +1701,11 @@ def main(args):
     nodes,graph,escape_positions,avg_coords,cos_lat=make_map(args.osm_id,args.center,args.radius,args.granularity)
     print(len(graph),"nodes")
 
+    # Add terminal state
+    for node in range(len(graph)):
+        graph[node].append(len(graph))
+    graph.append([])
+
     # TODO: Support speed and PacDots
     pursuers=[Pursuer(1) for _ in range(args.pursuers)]
     evaders=[Evader(1) for _ in range(args.evaders)]

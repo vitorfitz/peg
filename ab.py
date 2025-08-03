@@ -273,6 +273,16 @@ def visualize_map(path, nodes, transitions, escape_positions, center, file_name)
 def main(args):
     nodes,graph,escape_positions,avg_coords,cos_lat=make_map(args.osm_id,args.center,args.radius,args.granularity)
     print(len(graph),"nodes")
+    
+    # Add terminal state
+    for node in range(len(graph)):
+        graph[node].append(len(graph))
+    graph.append([])
+
+    from collections import Counter
+    dist=Counter([len(n) for n in graph])
+    print(dict(dist))
+
 
     # G = nx.DiGraph()
     # for node, neighbors in enumerate(graph):
